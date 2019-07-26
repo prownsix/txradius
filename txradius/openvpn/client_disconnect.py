@@ -8,6 +8,7 @@ from txradius.openvpn import CONFIG_FILE,ACCT_STOP
 from txradius.openvpn import get_challenge
 from txradius.openvpn import get_dictionary
 from txradius.openvpn import init_config
+from txradius.openvpn import daemon
 from txradius import message, client
 from txradius.openvpn import statusdb
 from hashlib import md5
@@ -26,7 +27,10 @@ def cli(conf):
     radius_addr = config.get('DEFAULT', 'radius_addr')
     radius_acct_port = config.getint('DEFAULT', 'radius_acct_port')
     radius_timeout = config.getint('DEFAULT', 'radius_timeout')
+    status_file = config.get('DEFAULT', 'statusfile')
     status_dbfile = config.get('DEFAULT', 'statusdb')
+
+    daemon.update_status(status_dbfile, status_file, nas_addr)
 
     username = os.environ.get('username')
     userip = os.environ.get('ifconfig_pool_remote_ip')
@@ -34,12 +38,15 @@ def cli(conf):
     realport = os.environ.get('trusted_port')
     session_id = md5(nas_addr + realip + realport).hexdigest()
 
+    cli = statusdb.get_client(status_dbfile,session_id)
+    ctime = int(time.time())
+
     req = {'User-Name':username}
     req['Acct-Status-Type'] = ACCT_STOP
     req['Acct-Session-Id'] = session_id
-    req["Acct-Output-Octets"]  =  0
-    req["Acct-Input-Octets"]  =  0 
-    req['Acct-Session-Time'] = 0
+    req["Acct-Output-Octets"]  =  int(cli['outbytes'])
+    req["Acct-Input-Octets"]  =  int(cli['inbytes'])
+    req['Acct-Session-Time'] = (ctime - int(cli['ctime']))
     req["NAS-IP-Address"]     = nas_addr
     req["NAS-Port-Id"]     = '0/0/0:0.0'
     req["NAS-Port"]           = 0

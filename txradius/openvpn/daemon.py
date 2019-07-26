@@ -24,6 +24,7 @@ def parse_status_file(status_file,nas_addr):
     session_users = {}
     flag1 = False
     flag2 = False
+    m = md5()
     with open(status_file) as stlines:
         for line in stlines:
 
@@ -47,7 +48,7 @@ def parse_status_file(status_file,nas_addr):
                 try:
                     username,realaddr,inbytes,outbytes,_ = line.split(',')
                     realip,realport = realaddr.split(':')
-                    session_id = md5(nas_addr + realip + realport).hexdigest()
+                    session_id = m.update(nas_addr + realip + realport).hexdigest()
                     session_users.setdefault(session_id, {}).update(dict(
                         session_id=session_id,
                         username=username,
@@ -63,7 +64,7 @@ def parse_status_file(status_file,nas_addr):
                 try:
                     userip,username,realaddr,_ = line.split(',')
                     realip,realport = realaddr.split(':')
-                    session_id = md5(nas_addr + realip + realport).hexdigest()
+                    session_id = m.update(nas_addr + realip + realport).hexdigest()
                     session_users.setdefault(session_id, {}).update(dict(
                         session_id=session_id,
                         username=username,
